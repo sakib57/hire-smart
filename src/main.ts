@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 8080;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
   app.enableCors();
 
   if (process.env.NODE_ENV !== 'production') {
@@ -14,6 +15,13 @@ async function bootstrap() {
       .setDescription('This api will help clients to store their data.')
       .setVersion('1.0')
       .addTag('Hire Smart')
+      .addBearerAuth({
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'Authorization',
+        in: 'header',
+      })
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('doc', app, document);
