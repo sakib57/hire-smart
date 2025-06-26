@@ -28,4 +28,31 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     return user;
   }
+
+  // User Update
+  async updateUser(
+    id: string,
+    data: { fullName?: string; location?: string; skillIds?: string[] },
+  ) {
+    const existing = await this.prisma.user.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('User not found');
+
+    const updateUser = await this.prisma.user.update({
+      where: { id },
+      data: {
+        fullName: data.fullName,
+        location: data.location,
+      },
+    });
+
+    if (data.skillIds) {
+      await this.prisma.userSkill.deleteMany({ where: { userId: id } });
+      await this.prisma.userSkill.createMany({
+        data: data.skillIds.map((skillId) => ({ userId: id, skillId })),
+        skipDuplicates: true,
+      });
+    }
+
+    return updateUser;
+  }
 }
