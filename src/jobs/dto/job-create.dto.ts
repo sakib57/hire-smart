@@ -23,10 +23,6 @@ export class JobCreateDTO {
   @IsNumber()
   readonly salaryMax: number;
 
-  @ApiProperty({ example: '9c753218-ee7d-4aa0-80ad-bd61f3b372d2' })
-  @IsString()
-  readonly employerId: string;
-
   @ApiProperty({ example: ['9c753218-ee7d-4aa0-80ad-bd61f3b372d2'] })
   @IsArray()
   readonly skillIds: string[];
