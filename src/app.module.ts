@@ -6,9 +6,17 @@ import { UsersModule } from './users/users.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SkillsModule } from './skills/skills.module';
 import { JobsModule } from './jobs/jobs.module';
+import { ApplicationsModule } from './applications/applications.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, UsersModule, SkillsModule, JobsModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    UsersModule,
+    SkillsModule,
+    JobsModule,
+    ApplicationsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

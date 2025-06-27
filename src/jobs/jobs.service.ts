@@ -1,21 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { JobCreateDTO } from './dto/job-create.dto';
+import { JobUpdateDTO } from './dto/job-update.dto';
 
 @Injectable()
 export class JobsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createJob(
-    userId: string,
-    data: {
-      title: string;
-      description: string;
-      location: string;
-      salaryMin: number;
-      salaryMax: number;
-      skillIds?: string[];
-    },
-  ) {
+  // Create Job Post
+  async createJob(userId: string, data: JobCreateDTO) {
     const job = await this.prisma.jobPost.create({
       data: {
         title: data.title,
@@ -37,15 +34,132 @@ export class JobsService {
     return job;
   }
 
-  async getAllJobs() {
+  // Get All Job Post
+  async getAllJobs(filters: {
+    keyword?: string;
+    location?: string;
+    salaryMin?: number;
+    salaryMax?: number;
+    skillIds?: string[];
+    page?: number;
+    limit?: number;
+  }) {
+    const {
+      keyword,
+      location,
+      salaryMin,
+      salaryMax,
+      skillIds,
+      page = 1,
+      limit = 10,
+    } = filters;
+
+    const where: any = {
+      isArchived: false,
+    };
+
+    if (keyword) {
+      where.OR = [
+        { title: { contains: keyword, mode: 'insensitive' } },
+        { description: { contains: keyword, mode: 'insensitive' } },
+      ];
+    }
+    if (location) where.location = { contains: location, mode: 'insensitive' };
+    if (salaryMin || salaryMax) {
+      where.AND = [
+        ...(salaryMin ? [{ salaryMin: { gte: salaryMin } }] : []),
+        ...(salaryMax ? [{ salaryMax: { lte: salaryMax } }] : []),
+      ];
+    }
+
+    if (skillIds && skillIds.length > 0) {
+      where.skills = {
+        some: {
+          skillId: {
+            in: skillIds,
+          },
+        },
+      };
+    }
+
+    const [jobs, total] = await this.prisma.$transaction([
+      this.prisma.jobPost.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        include: {
+          skills: { include: { skill: true } },
+          employer: { select: { id: true, fullName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.jobPost.count({ where }),
+    ]);
+
+    return {
+      data: jobs,
+      total,
+      page,
+      limit,
+    };
+  }
+
+  // Get employer jobs with applications
+  async getEmployerJobsWithApplications(employerId: string) {
     return this.prisma.jobPost.findMany({
-      where: { isArchived: false },
+      where: { employerId },
       include: {
         skills: { include: { skill: true } },
-        employer: { select: { id: true, fullName: true, email: true } },
+        applications: {
+          include: {
+            user: {
+              select: { id: true, fullName: true, email: true },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  // Update Job Post
+  async updateJob(jobId: string, employerId: string, data: JobUpdateDTO) {
+    const job = await this.prisma.jobPost.findUnique({ where: { id: jobId } });
+    if (!job) throw new NotFoundException('Job not found');
+    if (job.employerId !== employerId)
+      throw new ForbiddenException('Unauthorized');
+
+    const updated = await this.prisma.jobPost.update({
+      where: { id: jobId },
+      data: {
+        title: data.title,
+        description: data.description,
+        location: data.location,
+        salaryMin: data.salaryMin,
+        salaryMax: data.salaryMax,
+      },
+    });
+
+    if (data.skillIds) {
+      await this.prisma.jobSkill.deleteMany({ where: { jobPostId: jobId } });
+      await this.prisma.jobSkill.createMany({
+        data: data.skillIds.map((skillId) => ({ jobPostId: jobId, skillId })),
+        skipDuplicates: true,
+      });
+    }
+
+    return updated;
+  }
+
+  // Delete Job Post
+  async deleteJob(jobId: string, employerId: string) {
+    const job = await this.prisma.jobPost.findUnique({ where: { id: jobId } });
+    if (!job) throw new NotFoundException('Job not found');
+    if (job.employerId !== employerId)
+      throw new ForbiddenException('Unauthorized');
+
+    await this.prisma.jobSkill.deleteMany({ where: { jobPostId: jobId } });
+    return this.prisma.jobPost.delete({ where: { id: jobId } });
   }
 
   async archiveOldJobs(days = 30) {
