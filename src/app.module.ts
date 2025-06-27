@@ -7,6 +7,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { SkillsModule } from './skills/skills.module';
 import { JobsModule } from './jobs/jobs.module';
 import { ApplicationsModule } from './applications/applications.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ApplicationsModule } from './applications/applications.module';
     SkillsModule,
     JobsModule,
     ApplicationsModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
