@@ -162,6 +162,7 @@ export class JobsService {
     return this.prisma.jobPost.delete({ where: { id: jobId } });
   }
 
+  // Archive Job Posts
   async archiveOldJobs(days = 30) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
