@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { LoginDTO } from './dto/login.dto';
 import { SignupDTO } from './dto/signup.dto';
 import { ValidationPipe } from 'src/common/pipes/validation.pipe';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -15,6 +16,12 @@ export class AuthController {
   }
 
   @UsePipes(new ValidationPipe(true))
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Post('login')
   login(@Body() loginDto: LoginDTO) {
     return this.authService.login(loginDto);

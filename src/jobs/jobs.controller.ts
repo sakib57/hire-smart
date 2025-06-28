@@ -11,7 +11,14 @@ import {
   Param,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiHeader,
+  ApiOperation,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JobsService } from './jobs.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from 'src/common/guards/roles.guard';
@@ -63,6 +70,12 @@ export class JobsController {
       page: query.page ? Number(query.page) : 1,
       limit: query.limit ? Number(query.limit) : 10,
     });
+  }
+
+  @ApiOperation({ summary: 'Cached Recent Jobs' })
+  @Get('recent') // Cached
+  getRecentJobs() {
+    return this.jobsService.getRecentJobs();
   }
 
   // Get My Jobs

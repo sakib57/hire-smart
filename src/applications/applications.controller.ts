@@ -16,6 +16,7 @@ import { Roles } from 'src/common/decorators/roles.decorator';
 import { ApplyDTO } from './dto/application.dto';
 import { ApplyUpdateDTO } from './dto/application-update.dto';
 import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('applications')
 export class ApplicationsController {
@@ -44,6 +45,12 @@ export class ApplicationsController {
   // Application Update
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.EMPLOYER)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60,
+    },
+  })
   @Patch(':id/status')
   updateStatus(
     @Request() req: any,
