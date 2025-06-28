@@ -1,6 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as csurf from 'csurf';
+import helmet from 'helmet';
 
 const PORT = process.env.PORT || 8080;
 
@@ -26,6 +28,12 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('doc', app, document);
   }
+
+  // CSRF protection
+  app.use(csurf({ cookie: true }));
+
+  // Sanitize inputs
+  app.use(helmet());
 
   await app.listen(PORT);
 }

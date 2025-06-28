@@ -6,10 +6,14 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JobCreateDTO } from './dto/job-create.dto';
 import { JobUpdateDTO } from './dto/job-update.dto';
+import Redis from 'ioredis';
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly redis: Redis;
+  constructor(private readonly prisma: PrismaService) {
+    this.redis = new Redis();
+  }
 
   // Create Job Post
   async createJob(userId: string, data: JobCreateDTO) {
@@ -102,6 +106,22 @@ export class JobsService {
       page,
       limit,
     };
+  }
+
+  // Get Recent Jobs
+  async getRecentJobs() {
+    const cacheKey = 'recent_jobs';
+    const cached = await this.redis.get(cacheKey);
+    if (cached) return JSON.parse(cached);
+
+    const jobs = await this.prisma.jobPost.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+      include: { skills: true },
+    });
+
+    await this.redis.set(cacheKey, JSON.stringify(jobs), 'EX', 300); // 5 min
+    return jobs;
   }
 
   // Get employer jobs with applications
