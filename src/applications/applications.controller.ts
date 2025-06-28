@@ -7,24 +7,34 @@ import {
   Post,
   Request,
   UseGuards,
+  UsePipes,
 } from '@nestjs/common';
 import { ApplicationsService } from './applications.service';
 import { AuthGuard } from '@nestjs/passport';
-import { AppStatus, UserRole } from '@prisma/client';
+import { UserRole } from '@prisma/client';
 import { RolesGuard } from 'src/common/guards/roles.guard';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { ApplyDTO } from './dto/application.dto';
 import { ApplyUpdateDTO } from './dto/application-update.dto';
-import { ApiBearerAuth, ApiHeader } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { ApiBearerAuth, ApiHeader, ApiSecurity } from '@nestjs/swagger';
+import { seconds, Throttle } from '@nestjs/throttler';
+import { ValidationPipe } from 'src/common/pipes/validation.pipe';
 
 @Controller('applications')
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
 
   // Apply
+  @UsePipes(new ValidationPipe(true))
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.CANDIDATE)
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: seconds(60),
+    },
+  })
+  @ApiSecurity('X-CSRF-TOKEN')
   @Post()
   apply(@Request() req: any, @Body() applyDto: ApplyDTO) {
     return this.applicationsService.apply(req.user.id, applyDto);
@@ -43,14 +53,10 @@ export class ApplicationsController {
   }
 
   // Application Update
+  @UsePipes(new ValidationPipe(true))
   @UseGuards(AuthGuard('jwt'), RolesGuard)
   @Roles(UserRole.EMPLOYER)
-  @Throttle({
-    default: {
-      limit: 5,
-      ttl: 60,
-    },
-  })
+  @ApiSecurity('X-CSRF-TOKEN')
   @Patch(':id/status')
   updateStatus(
     @Request() req: any,

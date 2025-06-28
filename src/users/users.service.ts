@@ -32,7 +32,12 @@ export class UsersService {
   // User Update
   async updateUser(
     id: string,
-    data: { fullName?: string; location?: string; skillIds?: string[] },
+    data: {
+      fullName?: string;
+      location?: string;
+      expectedSalary: number;
+      skillIds?: string[];
+    },
   ) {
     const existing = await this.prisma.user.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('User not found');
@@ -42,6 +47,7 @@ export class UsersService {
       data: {
         fullName: data.fullName,
         location: data.location,
+        expectedSalary: data.expectedSalary,
       },
     });
 

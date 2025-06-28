@@ -23,7 +23,7 @@ export class AdminService {
     };
   }
 
-  // Get Employer Application matrix
+  // Get Employer Application matrix cached
   async getEmployerApplicationStats(employerId: string) {
     const cacheKey = `employer_stats:${employerId}`;
     const cached = await this.redis.get(cacheKey);

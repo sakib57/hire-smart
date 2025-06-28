@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as cookieParser from 'cookie-parser';
 import * as csurf from 'csurf';
 import helmet from 'helmet';
 
@@ -8,8 +9,10 @@ const PORT = process.env.PORT || 8080;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://localhost:8080',
+    credentials: true,
+  });
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
@@ -24,10 +27,17 @@ async function bootstrap() {
         name: 'Authorization',
         in: 'header',
       })
+      .addSecurity('X-CSRF-TOKEN', {
+        type: 'apiKey',
+        in: 'header',
+        name: 'x-csrf-token',
+      })
       .build();
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('doc', app, document);
   }
+
+  app.use(cookieParser());
 
   // CSRF protection
   app.use(csurf({ cookie: true }));
