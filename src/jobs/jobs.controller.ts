@@ -13,8 +13,6 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiBody,
-  ApiConsumes,
   ApiHeader,
   ApiOperation,
   ApiQuery,
@@ -27,6 +25,7 @@ import { JobCreateDTO } from './dto/job-create.dto';
 import { ValidationPipe } from 'src/common/pipes/validation.pipe';
 import { UserRole } from '@prisma/client';
 import { JobUpdateDTO } from './dto/job-update.dto';
+import { ApiSecurity } from '@nestjs/swagger';
 
 @Controller('jobs')
 export class JobsController {
@@ -41,6 +40,7 @@ export class JobsController {
     name: 'Authorization',
     description: 'Bearer Token',
   })
+  @ApiSecurity('X-CSRF-TOKEN')
   @Post()
   create(@Request() req: any, @Body() body: JobCreateDTO) {
     return this.jobsService.createJob(req.user.id, body);
@@ -92,6 +92,7 @@ export class JobsController {
 
   // Update Job
   @UseGuards(AuthGuard('jwt'))
+  @ApiSecurity('X-CSRF-TOKEN')
   @Patch(':id')
   update(
     @Request() req: any,
@@ -103,8 +104,9 @@ export class JobsController {
 
   // Delete Job Post
   @UseGuards(AuthGuard('jwt'))
+  @ApiSecurity('X-CSRF-TOKEN')
   @Delete(':id')
-  delete(@Request() req, @Param('id') id: string) {
+  delete(@Request() req: any, @Param('id') id: string) {
     return this.jobsService.deleteJob(id, req.user.id);
   }
 }
