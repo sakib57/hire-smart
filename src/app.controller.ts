@@ -17,4 +17,9 @@ export class AppController {
     res.cookie('X-CSRF-TOKEN', token);
     res.json({ csrfToken: token });
   }
+
+  @Get('health')
+  healthCheck() {
+    return { status: 'ok' };
+  }
 }
